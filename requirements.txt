@@ -1,0 +1,30 @@
+# Основные зависимости
+Django==4.2.7
+django-cleanup==8.0.0
+Pillow==10.1.0
+python-dotenv==1.0.0
+
+# Для работы с базой данных
+psycopg2-binary==2.9.9
+
+# Для WebSocket и чата
+channels==4.0.0
+channels-redis==4.1.0
+daphne==4.0.0
+redis==5.0.1
+
+# Для фоновых задач
+django-background-tasks==1.2.5
+
+# Для аутентификации
+social-auth-app-django==5.3.0
+
+# Для API
+djangorestframework==3.14.0
+django-cors-headers==4.3.0
+
+# Для обработки медиа
+moviepy==1.0.3
+
+# Для работы с картами
+geopy==2.4.0
