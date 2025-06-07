@@ -1,0 +1,176 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Stickerz{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: var(--bg-color);
+        border: 1px solid var(--primary-color);
+    }
+
+    .preview-container {
+        margin-top: 1rem;
+        text-align: center;
+    }
+
+    .preview-image {
+        max-width: 100%;
+        max-height: 300px;
+        object-fit: contain;
+    }
+
+    .map-container {
+        height: 400px;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .coordinates-help {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+
+    .error-feedback {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <h1 class="mb-4">{{ title }}</h1>
+
+        <form method="post" enctype="multipart/form-data" id="stickerForm">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                            <div class="error-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if field.name == 'media_file' %}
+                        <div class="preview-container" id="mediaPreview"></div>
+                    {% endif %}
+
+                    {% if field.name == 'location_coordinates' %}
+                        <div class="coordinates-help">
+                            Кликните на карте, чтобы выбрать местоположение
+                        </div>
+                        <div class="map-container" id="map"></div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="{% url 'sticker_list' %}" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Предпросмотр медиафайла
+    const mediaInput = document.querySelector('input[name="media_file"]');
+    const mediaTypeSelect = document.querySelector('select[name="media_type"]');
+    const previewContainer = document.getElementById('mediaPreview');
+
+    if (mediaInput && previewContainer) {
+        mediaInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewContainer.innerHTML = '';
+                
+                if (mediaTypeSelect.value === 'photo') {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'preview-image';
+                    previewContainer.appendChild(img);
+                } else if (mediaTypeSelect.value === 'video') {
+                    const video = document.createElement('video');
+                    video.src = e.target.result;
+                    video.className = 'preview-image';
+                    video.controls = true;
+                    previewContainer.appendChild(video);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Инициализация карты
+    const map = L.map('map').setView([55.7558, 37.6173], 10); // Москва по умолчанию
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    let marker;
+    const coordsInput = document.querySelector('input[name="location_coordinates"]');
+
+    // Если есть сохраненные координаты, показываем маркер
+    if (coordsInput && coordsInput.value) {
+        const [lat, lng] = coordsInput.value.split(',').map(Number);
+        marker = L.marker([lat, lng]).addTo(map);
+        map.setView([lat, lng], 15);
+    }
+
+    // Обработка клика по карте
+    map.on('click', function(e) {
+        const lat = e.latlng.lat.toFixed(6);
+        const lng = e.latlng.lng.toFixed(6);
+        
+        if (marker) {
+            marker.setLatLng(e.latlng);
+        } else {
+            marker = L.marker(e.latlng).addTo(map);
+        }
+        
+        coordsInput.value = `${lat},${lng}`;
+    });
+
+    // Валидация формы
+    const form = document.getElementById('stickerForm');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+
+        // Проверка координат
+        if (!coordsInput.value) {
+            isValid = false;
+            const error = document.createElement('div');
+            error.className = 'error-feedback';
+            error.textContent = 'Выберите местоположение на карте';
+            coordsInput.parentNode.appendChild(error);
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}
