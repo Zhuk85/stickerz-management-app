@@ -1,0 +1,281 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Чаты - Stickerz{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+
+    .chat-list {
+        background-color: var(--bg-color);
+        border: 1px solid var(--primary-color);
+        border-radius: 0.5rem;
+    }
+
+    .chat-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        transition: background-color 0.2s;
+    }
+
+    .chat-item:last-child {
+        border-bottom: none;
+    }
+
+    .chat-item:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 1rem;
+        object-fit: cover;
+    }
+
+    .chat-content {
+        flex-grow: 1;
+    }
+
+    .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.25rem;
+    }
+
+    .chat-name {
+        font-weight: bold;
+        color: var(--text-color);
+    }
+
+    .chat-time {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .chat-last-message {
+        color: #6c757d;
+        font-size: 0.875rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 400px;
+    }
+
+    .chat-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        margin-left: 1rem;
+    }
+
+    .unread-badge {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+
+    .search-box {
+        margin-bottom: 1rem;
+    }
+
+    .search-box .input-group {
+        max-width: 300px;
+        margin: 0 auto;
+    }
+
+    .chat-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .chat-link:hover {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .online-indicator {
+        width: 10px;
+        height: 10px;
+        background-color: #28a745;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+
+    .offline-indicator {
+        width: 10px;
+        height: 10px;
+        background-color: #6c757d;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="chat-container">
+        <h1 class="mb-4">Чаты</h1>
+
+        <!-- Поиск -->
+        <div class="search-box">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Поиск чатов..." id="chatSearch">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Список чатов -->
+        <div class="chat-list">
+            {% if chat_rooms %}
+                {% for room in chat_rooms %}
+                    <a href="{{ room.get_absolute_url }}" class="chat-link">
+                        <div class="chat-item">
+                            {% with other_user=room.participants.exclude.id=request.user.id.first %}
+                                {% if other_user.avatar %}
+                                    <img src="{{ other_user.avatar.url }}" alt="{{ other_user.username }}" class="chat-avatar">
+                                {% else %}
+                                    <img src="{% static 'img/default-avatar.png' %}" alt="{{ other_user.username }}" class="chat-avatar">
+                                {% endif %}
+
+                                <div class="chat-content">
+                                    <div class="chat-header">
+                                        <div class="chat-name">
+                                            {% if other_user.is_online %}
+                                                <span class="online-indicator"></span>
+                                            {% else %}
+                                                <span class="offline-indicator"></span>
+                                            {% endif %}
+                                            {{ other_user.get_full_name|default:other_user.username }}
+                                        </div>
+                                        {% if room.last_message %}
+                                            <span class="chat-time">
+                                                {{ room.last_message.created_at|timesince }} назад
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="chat-last-message">
+                                        {% if room.last_message %}
+                                            {% if room.last_message.sender == request.user %}
+                                                Вы:
+                                            {% endif %}
+                                            {% if room.last_message.file %}
+                                                {% if room.last_message.is_image %}
+                                                    <i class="fas fa-image"></i> Изображение
+                                                {% else %}
+                                                    <i class="fas fa-file"></i> Файл
+                                                {% endif %}
+                                            {% else %}
+                                                {{ room.last_message.content|truncatechars:50 }}
+                                            {% endif %}
+                                        {% else %}
+                                            Нет сообщений
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="chat-meta">
+                                    {% if room.unread_count > 0 %}
+                                        <span class="unread-badge">{{ room.unread_count }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endwith %}
+                        </div>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Нет активных чатов</h3>
+                    <p class="text-muted">
+                        Начните общение с другими пользователями, чтобы здесь появились ваши чаты
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Пагинация -->
+        {% if chat_rooms.has_other_pages %}
+            <nav aria-label="Навигация по чатам" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if chat_rooms.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ chat_rooms.previous_page_number }}">
+                                Назад
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in chat_rooms.paginator.page_range %}
+                        <li class="page-item {% if chat_rooms.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endfor %}
+
+                    {% if chat_rooms.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ chat_rooms.next_page_number }}">
+                                Вперед
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Поиск по чатам
+    const searchInput = document.getElementById('chatSearch');
+    const chatItems = document.querySelectorAll('.chat-item');
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+
+        chatItems.forEach(item => {
+            const chatName = item.querySelector('.chat-name').textContent.toLowerCase();
+            const lastMessage = item.querySelector('.chat-last-message').textContent.toLowerCase();
+
+            if (chatName.includes(searchTerm) || lastMessage.includes(searchTerm)) {
+                item.parentElement.style.display = 'block';
+            } else {
+                item.parentElement.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
