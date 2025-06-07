@@ -1,0 +1,230 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Регистрация - Stickerz{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-container {
+        max-width: 500px;
+        margin: 3rem auto;
+        padding: 2rem;
+        background-color: var(--bg-color);
+        border: 1px solid var(--primary-color);
+    }
+
+    .social-register {
+        margin: 2rem 0;
+        text-align: center;
+    }
+
+    .social-register .btn {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .divider {
+        text-align: center;
+        margin: 1rem 0;
+        position: relative;
+    }
+
+    .divider::before,
+    .divider::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 45%;
+        height: 1px;
+        background-color: var(--primary-color);
+    }
+
+    .divider::before {
+        left: 0;
+    }
+
+    .divider::after {
+        right: 0;
+    }
+
+    .divider span {
+        background-color: var(--bg-color);
+        padding: 0 1rem;
+        color: var(--text-color);
+        opacity: 0.7;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .password-requirements {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+
+    .help-links {
+        margin-top: 2rem;
+        text-align: center;
+    }
+
+    .help-links a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .help-links a:hover {
+        text-decoration: underline;
+    }
+
+    .terms {
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 1rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="register-container">
+        <h1 class="text-center mb-4">Регистрация</h1>
+
+        <!-- Социальная регистрация -->
+        <div class="social-register">
+            <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn btn-outline-danger">
+                <i class="fab fa-google"></i> Регистрация через Google
+            </a>
+        </div>
+
+        <div class="divider">
+            <span>или</span>
+        </div>
+
+        <!-- Форма регистрации -->
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Имя пользователя</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    {% for error in form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <small class="form-text text-muted">
+                    Только буквы, цифры и символы @/./+/-/_
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    {% for error in form.email.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.password1.id_for_label }}">Пароль</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    {% for error in form.password1.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <div class="password-requirements">
+                    <p>Пароль должен содержать:</p>
+                    <ul>
+                        <li>Минимум 8 символов</li>
+                        <li>Буквы и цифры</li>
+                        <li>Как минимум один специальный символ</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.password2.id_for_label }}">Подтверждение пароля</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    {% for error in form.password2.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+
+            <div class="terms">
+                Регистрируясь, вы соглашаетесь с нашими 
+                <a href="#">Условиями использования</a> и 
+                <a href="#">Политикой конфиденциальности</a>
+            </div>
+
+            <div class="help-links">
+                <p>
+                    Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Валидация формы на стороне клиента
+    const form = document.querySelector('form');
+    const password1 = document.getElementById('id_password1');
+    const password2 = document.getElementById('id_password2');
+
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+
+        // Проверка совпадения паролей
+        if (password1.value !== password2.value) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback d-block';
+            errorDiv.textContent = 'Пароли не совпадают';
+            password2.parentNode.appendChild(errorDiv);
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+
+    // Проверка сложности пароля в реальном времени
+    password1.addEventListener('input', function() {
+        const password = this.value;
+        const requirements = {
+            length: password.length >= 8,
+            letter: /[a-zA-Z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[!@#$%^&*]/.test(password)
+        };
+
+        // Обновляем визуальные индикаторы
+        document.querySelectorAll('.password-requirements li').forEach((li, index) => {
+            if (index === 0 && requirements.length) li.style.color = 'green';
+            else if (index === 1 && requirements.letter && requirements.number) li.style.color = 'green';
+            else if (index === 2 && requirements.special) li.style.color = 'green';
+            else li.style.color = '#6c757d';
+        });
+    });
+});
+</script>
+{% endblock %}
