@@ -1,0 +1,250 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ sticker.title }} - Stickerz{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sticker-media {
+        max-height: 600px;
+        width: 100%;
+        object-fit: contain;
+        margin-bottom: 2rem;
+    }
+
+    .sticker-info {
+        background-color: var(--bg-color);
+        border: 1px solid var(--primary-color);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .location-map {
+        height: 300px;
+        margin-bottom: 2rem;
+    }
+
+    .comments-section {
+        margin-top: 3rem;
+    }
+
+    .comment {
+        border-bottom: 1px solid #eee;
+        padding: 1rem 0;
+    }
+
+    .comment:last-child {
+        border-bottom: none;
+    }
+
+    .like-button {
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .like-button.liked {
+        color: #dc3545;
+    }
+
+    .author-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .author-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 1rem;
+    }
+
+    .metadata {
+        color: var(--text-color);
+        opacity: 0.7;
+    }
+
+    .action-buttons {
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Медиафайл -->
+            {% if sticker.media_type == 'video' %}
+                <video class="sticker-media" controls>
+                    <source src="{{ sticker.media_file.url }}" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
+            {% else %}
+                <img src="{{ sticker.media_file.url }}" class="sticker-media" alt="{{ sticker.title }}">
+            {% endif %}
+
+            <!-- Основная информация -->
+            <div class="sticker-info">
+                <div class="author-info">
+                    {% if sticker.author.profile.avatar %}
+                        <img src="{{ sticker.author.profile.avatar.url }}" class="author-avatar" alt="{{ sticker.author.username }}">
+                    {% else %}
+                        <img src="{% static 'img/default-avatar.png' %}" class="author-avatar" alt="{{ sticker.author.username }}">
+                    {% endif %}
+                    <div>
+                        <h5 class="mb-0">{{ sticker.author.username }}</h5>
+                        <small class="metadata">{{ sticker.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                </div>
+
+                <h1 class="mb-4">{{ sticker.title }}</h1>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="badge bg-primary">{{ sticker.city.name }}</span>
+                        <span class="badge bg-secondary">{{ sticker.category.name }}</span>
+                    </div>
+                    <div>
+                        <span class="me-3">
+                            <i class="fas fa-eye"></i> {{ sticker.views_count }}
+                        </span>
+                        <span class="like-button {% if user in sticker.likes.all %}liked{% endif %}" 
+                              data-sticker-id="{{ sticker.id }}">
+                            <i class="fas fa-heart"></i> <span class="likes-count">{{ sticker.likes_count }}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <p class="lead">{{ sticker.description }}</p>
+
+                {% if sticker.navigation_link %}
+                    <a href="{{ sticker.navigation_link }}" class="btn btn-outline-primary" target="_blank">
+                        <i class="fas fa-map-marker-alt"></i> Открыть на карте
+                    </a>
+                {% endif %}
+
+                {% if user == sticker.author or user.is_staff %}
+                    <div class="action-buttons">
+                        <a href="{% url 'sticker_edit' pk=sticker.pk %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Редактировать
+                        </a>
+                        <a href="{% url 'sticker_delete' pk=sticker.pk %}" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Удалить
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Комментарии -->
+            <div class="comments-section">
+                <h3>Комментарии ({{ sticker.comments.count }})</h3>
+                
+                {% if user.is_authenticated %}
+                    <form method="post" class="mb-4">
+                        {% csrf_token %}
+                        {{ comment_form.text }}
+                        <button type="submit" class="btn btn-primary mt-2">Отправить</button>
+                    </form>
+                {% else %}
+                    <p>
+                        <a href="{% url 'login' %}?next={{ request.path }}">Войдите</a>, 
+                        чтобы оставить комментарий
+                    </p>
+                {% endif %}
+
+                {% for comment in sticker.comments.all %}
+                    <div class="comment">
+                        <div class="d-flex justify-content-between">
+                            <div class="author-info">
+                                {% if comment.author.profile.avatar %}
+                                    <img src="{{ comment.author.profile.avatar.url }}" 
+                                         class="author-avatar" alt="{{ comment.author.username }}">
+                                {% else %}
+                                    <img src="{% static 'img/default-avatar.png' %}" 
+                                         class="author-avatar" alt="{{ comment.author.username }}">
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ comment.author.username }}</h6>
+                                    <small class="metadata">{{ comment.created_at|date:"d.m.Y H:i" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mt-2">{{ comment.text }}</p>
+                    </div>
+                {% empty %}
+                    <p>Пока нет комментариев</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Карта -->
+            <div class="location-map" id="map"></div>
+
+            <!-- Похожие стикеры -->
+            <h4>Похожие стикеры</h4>
+            {% for similar in similar_stickers %}
+                <div class="card mb-3">
+                    {% if similar.preview_image %}
+                        <img src="{{ similar.preview_image.url }}" class="card-img-top" alt="{{ similar.title }}">
+                    {% else %}
+                        <img src="{{ similar.media_file.url }}" class="card-img-top" alt="{{ similar.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ similar.title }}</h5>
+                        <p class="card-text">{{ similar.description|truncatechars:100 }}</p>
+                        <a href="{{ similar.get_absolute_url }}" class="stretched-link"></a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://kit.fontawesome.com/your-code.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация карты
+        const coordinates = "{{ sticker.location_coordinates }}".split(',').map(Number);
+        const map = L.map('map').setView(coordinates, 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker(coordinates).addTo(map);
+
+        // Обработка лайков
+        const likeButton = document.querySelector('.like-button');
+        if (likeButton) {
+            likeButton.addEventListener('click', function() {
+                const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+                if (!isAuthenticated) {
+                    window.location.href = "{% url 'login' %}?next={{ request.path }}";
+                    return;
+                }
+
+                fetch("{% url 'like_sticker' pk=sticker.pk %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const likesCount = document.querySelector('.likes-count');
+                    if (data.liked) {
+                        likeButton.classList.add('liked');
+                    } else {
+                        likeButton.classList.remove('liked');
+                    }
+                    likesCount.textContent = data.likes_count;
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        }
+    });
+</script>
+{% endblock %}
