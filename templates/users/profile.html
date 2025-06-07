@@ -1,0 +1,293 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ user.get_full_name }} - Профиль{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background-color: var(--bg-color);
+        border: 1px solid var(--primary-color);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .profile-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 1rem;
+    }
+
+    .profile-stats {
+        display: flex;
+        justify-content: space-around;
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 0.5rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .profile-bio {
+        margin: 1.5rem 0;
+    }
+
+    .profile-actions {
+        margin-top: 1rem;
+    }
+
+    .sticker-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .sticker-card {
+        transition: transform 0.2s;
+    }
+
+    .sticker-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .sticker-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background-color: var(--bg-color);
+        border: 1px solid var(--primary-color);
+        margin-top: 2rem;
+    }
+
+    .nav-tabs {
+        margin-bottom: 2rem;
+    }
+
+    .nav-tabs .nav-link {
+        color: var(--text-color);
+    }
+
+    .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Профиль -->
+    <div class="profile-header">
+        <div class="row">
+            <div class="col-md-4 text-center">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="{{ user.username }}" class="profile-avatar">
+                {% else %}
+                    <img src="{% static 'img/default-avatar.png' %}" alt="{{ user.username }}" class="profile-avatar">
+                {% endif %}
+            </div>
+            <div class="col-md-8">
+                <h1>{{ user.get_full_name }}</h1>
+                <p class="text-muted">@{{ user.username }}</p>
+                
+                {% if user.location %}
+                    <p><i class="fas fa-map-marker-alt"></i> {{ user.location }}</p>
+                {% endif %}
+                
+                {% if user.website %}
+                    <p>
+                        <i class="fas fa-globe"></i>
+                        <a href="{{ user.website }}" target="_blank">{{ user.website }}</a>
+                    </p>
+                {% endif %}
+
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.stickers_count }}</div>
+                        <div class="stat-label">Стикеров</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.likes_received_count }}</div>
+                        <div class="stat-label">Получено лайков</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.likes_given_count }}</div>
+                        <div class="stat-label">Поставлено лайков</div>
+                    </div>
+                </div>
+
+                {% if user.bio %}
+                    <div class="profile-bio">
+                        <h5>О себе</h5>
+                        <p>{{ user.bio }}</p>
+                    </div>
+                {% endif %}
+
+                <div class="profile-actions">
+                    <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Редактировать профиль
+                    </a>
+                    <a href="{% url 'password_change' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-key"></i> Изменить пароль
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладки -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#stickers" role="tab">
+                Стикеры
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#liked" role="tab">
+                Понравившиеся
+            </a>
+        </li>
+    </ul>
+
+    <!-- Содержимое вкладок -->
+    <div class="tab-content">
+        <!-- Стикеры пользователя -->
+        <div class="tab-pane fade show active" id="stickers" role="tabpanel">
+            {% if stickers %}
+                <div class="sticker-grid">
+                    {% for sticker in stickers %}
+                        <div class="card sticker-card">
+                            <div class="{% if sticker.media_type == 'video' %}video-preview{% endif %}">
+                                {% if sticker.preview_image %}
+                                    <img src="{{ sticker.preview_image.url }}" class="card-img-top sticker-image" alt="{{ sticker.title }}">
+                                {% else %}
+                                    <img src="{{ sticker.media_file.url }}" class="card-img-top sticker-image" alt="{{ sticker.title }}">
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ sticker.title }}</h5>
+                                <p class="card-text">{{ sticker.description|truncatechars:100 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt"></i> {{ sticker.city.name }}
+                                    </small>
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-heart"></i> {{ sticker.likes_count }}
+                                            <i class="fas fa-eye ms-2"></i> {{ sticker.views_count }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <a href="{{ sticker.get_absolute_url }}" class="stretched-link"></a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Пагинация -->
+                {% if stickers.has_other_pages %}
+                    <nav aria-label="Навигация по страницам" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if stickers.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ stickers.previous_page_number }}">
+                                        Назад
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in stickers.paginator.page_range %}
+                                <li class="page-item {% if stickers.number == num %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endfor %}
+
+                            {% if stickers.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ stickers.next_page_number }}">
+                                        Вперед
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">
+                    <h3>Пока нет стикеров</h3>
+                    <p>Создайте свой первый стикер и поделитесь им с другими!</p>
+                    <a href="{% url 'sticker_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Создать стикер
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Понравившиеся стикеры -->
+        <div class="tab-pane fade" id="liked" role="tabpanel">
+            {% if user.liked_stickers.exists %}
+                <div class="sticker-grid">
+                    {% for sticker in user.liked_stickers.all %}
+                        <div class="card sticker-card">
+                            <div class="{% if sticker.media_type == 'video' %}video-preview{% endif %}">
+                                {% if sticker.preview_image %}
+                                    <img src="{{ sticker.preview_image.url }}" class="card-img-top sticker-image" alt="{{ sticker.title }}">
+                                {% else %}
+                                    <img src="{{ sticker.media_file.url }}" class="card-img-top sticker-image" alt="{{ sticker.title }}">
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ sticker.title }}</h5>
+                                <p class="card-text">{{ sticker.description|truncatechars:100 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> {{ sticker.author.username }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-heart"></i> {{ sticker.likes_count }}
+                                    </small>
+                                </div>
+                                <a href="{{ sticker.get_absolute_url }}" class="stretched-link"></a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <h3>Нет понравившихся стикеров</h3>
+                    <p>Найдите интересные стикеры и отметьте их как понравившиеся!</p>
+                    <a href="{% url 'sticker_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Найти стикеры
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://kit.fontawesome.com/your-code.js"></script>
+{% endblock %}
