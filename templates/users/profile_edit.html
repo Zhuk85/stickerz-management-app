@@ -1,0 +1,230 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Редактирование профиля - Stickerz{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-container {
+        max-width: 600px;
+        margin: 3rem auto;
+        padding: 2rem;
+        background-color: var(--bg-color);
+        border: 1px solid var(--primary-color);
+    }
+
+    .current-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 1rem;
+    }
+
+    .avatar-preview {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 1rem 0;
+        display: none;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    .error-feedback {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="edit-container">
+        <h1 class="text-center mb-4">Редактирование профиля</h1>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Аватар -->
+            <div class="form-section text-center">
+                <h5 class="mb-3">Аватар профиля</h5>
+                
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="Текущий аватар" class="current-avatar" id="currentAvatar">
+                {% else %}
+                    <img src="{% static 'img/default-avatar.png' %}" alt="Аватар по умолчанию" class="current-avatar" id="currentAvatar">
+                {% endif %}
+                
+                <img id="avatarPreview" class="avatar-preview">
+                
+                {{ avatar_form.avatar }}
+                {% if avatar_form.avatar.errors %}
+                    {% for error in avatar_form.avatar.errors %}
+                        <div class="error-feedback">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <div class="help-text">
+                    Рекомендуемый размер: 500x500 пикселей. Максимальный размер: 2MB.
+                </div>
+            </div>
+
+            <!-- Основная информация -->
+            <div class="form-section">
+                <h5 class="mb-3">Основная информация</h5>
+
+                <div class="form-group">
+                    <label for="{{ profile_form.username.id_for_label }}">Имя пользователя</label>
+                    {{ profile_form.username }}
+                    {% if profile_form.username.errors %}
+                        {% for error in profile_form.username.errors %}
+                            <div class="error-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ profile_form.email.id_for_label }}">Email</label>
+                    {{ profile_form.email }}
+                    {% if profile_form.email.errors %}
+                        {% for error in profile_form.email.errors %}
+                            <div class="error-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ profile_form.first_name.id_for_label }}">Имя</label>
+                    {{ profile_form.first_name }}
+                    {% if profile_form.first_name.errors %}
+                        {% for error in profile_form.first_name.errors %}
+                            <div class="error-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ profile_form.last_name.id_for_label }}">Фамилия</label>
+                    {{ profile_form.last_name }}
+                    {% if profile_form.last_name.errors %}
+                        {% for error in profile_form.last_name.errors %}
+                            <div class="error-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Дополнительная информация -->
+            <div class="form-section">
+                <h5 class="mb-3">Дополнительная информация</h5>
+
+                <div class="form-group">
+                    <label for="{{ profile_form.bio.id_for_label }}">О себе</label>
+                    {{ profile_form.bio }}
+                    {% if profile_form.bio.errors %}
+                        {% for error in profile_form.bio.errors %}
+                            <div class="error-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="help-text">
+                        Расскажите немного о себе (максимум 500 символов)
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ profile_form.location.id_for_label }}">Местоположение</label>
+                    {{ profile_form.location }}
+                    {% if profile_form.location.errors %}
+                        {% for error in profile_form.location.errors %}
+                            <div class="error-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ profile_form.website.id_for_label }}">Веб-сайт</label>
+                    {{ profile_form.website }}
+                    {% if profile_form.website.errors %}
+                        {% for error in profile_form.website.errors %}
+                            <div class="error-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Кнопки действий -->
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Сохранить изменения
+                </button>
+                <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Предпросмотр аватара
+    const avatarInput = document.getElementById('id_avatar');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const currentAvatar = document.getElementById('currentAvatar');
+
+    if (avatarInput) {
+        avatarInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    avatarPreview.src = e.target.result;
+                    avatarPreview.style.display = 'block';
+                    currentAvatar.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                avatarPreview.style.display = 'none';
+                currentAvatar.style.display = 'block';
+            }
+        });
+    }
+
+    // Добавляем классы Bootstrap к полям формы
+    const formInputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="url"], textarea');
+    formInputs.forEach(input => {
+        input.classList.add('form-control');
+    });
+
+    // Добавляем класс для поля загрузки файла
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.classList.add('form-control');
+    }
+});
+</script>
+{% endblock %}
