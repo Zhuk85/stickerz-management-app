@@ -1,0 +1,156 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Вход - Stickerz{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        max-width: 400px;
+        margin: 3rem auto;
+        padding: 2rem;
+        background-color: var(--bg-color);
+        border: 1px solid var(--primary-color);
+    }
+
+    .social-login {
+        margin: 2rem 0;
+        text-align: center;
+    }
+
+    .social-login .btn {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .divider {
+        text-align: center;
+        margin: 1rem 0;
+        position: relative;
+    }
+
+    .divider::before,
+    .divider::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 45%;
+        height: 1px;
+        background-color: var(--primary-color);
+    }
+
+    .divider::before {
+        left: 0;
+    }
+
+    .divider::after {
+        right: 0;
+    }
+
+    .divider span {
+        background-color: var(--bg-color);
+        padding: 0 1rem;
+        color: var(--text-color);
+        opacity: 0.7;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .help-links {
+        margin-top: 2rem;
+        text-align: center;
+    }
+
+    .help-links a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .help-links a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="login-container">
+        <h1 class="text-center mb-4">Вход</h1>
+
+        <!-- Социальная авторизация -->
+        <div class="social-login">
+            <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn btn-outline-danger">
+                <i class="fab fa-google"></i> Войти через Google
+            </a>
+        </div>
+
+        <div class="divider">
+            <span>или</span>
+        </div>
+
+        <!-- Форма входа -->
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Имя пользователя</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    {% for error in form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}">Пароль</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    {% for error in form.password.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Войти</button>
+
+            <div class="help-links">
+                <p>
+                    <a href="{% url 'password_reset' %}">Забыли пароль?</a>
+                </p>
+                <p>
+                    Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Добавляем классы Bootstrap к полям формы
+    const usernameInput = document.getElementById('id_username');
+    const passwordInput = document.getElementById('id_password');
+
+    if (usernameInput) {
+        usernameInput.classList.add('form-control');
+        usernameInput.placeholder = 'Введите имя пользователя';
+    }
+
+    if (passwordInput) {
+        passwordInput.classList.add('form-control');
+        passwordInput.placeholder = 'Введите пароль';
+    }
+});
+</script>
+{% endblock %}
