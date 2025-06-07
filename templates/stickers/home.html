@@ -1,0 +1,162 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Главная - Stickerz{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        background-color: var(--primary-color);
+        color: var(--secondary-color);
+        padding: 4rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .sticker-card {
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s;
+    }
+
+    .sticker-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .sticker-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .city-card {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .city-image {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        filter: brightness(70%);
+    }
+
+    .city-name {
+        position: absolute;
+        bottom: 1rem;
+        left: 1rem;
+        color: white;
+        font-size: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .category-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero секция -->
+<section class="hero">
+    <div class="container text-center">
+        <h1 class="display-4">Откройте свой город заново</h1>
+        <p class="lead">Делитесь интересными местами и находками с другими</p>
+        {% if user.is_authenticated %}
+            <a href="{% url 'sticker_create' %}" class="btn btn-light btn-lg">Создать стикер</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-light btn-lg">Присоединиться</a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Последние стикеры -->
+<section class="container mb-5">
+    <h2 class="mb-4">Последние находки</h2>
+    <div class="row">
+        {% for sticker in latest_stickers %}
+            <div class="col-md-4 col-sm-6">
+                <div class="card sticker-card">
+                    {% if sticker.preview_image %}
+                        <img src="{{ sticker.preview_image.url }}" class="card-img-top sticker-image" alt="{{ sticker.title }}">
+                    {% else %}
+                        <img src="{{ sticker.media_file.url }}" class="card-img-top sticker-image" alt="{{ sticker.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ sticker.title }}</h5>
+                        <p class="card-text text-muted">
+                            {{ sticker.description|truncatechars:100 }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                {{ sticker.city.name }} • {{ sticker.category.name }}
+                            </small>
+                            <div>
+                                <i class="fas fa-heart"></i> {{ sticker.likes_count }}
+                                <i class="fas fa-eye ml-2"></i> {{ sticker.views_count }}
+                            </div>
+                        </div>
+                        <a href="{{ sticker.get_absolute_url }}" class="stretched-link"></a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <p class="text-center">Пока нет стикеров. Будьте первым!</p>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+        <a href="{% url 'sticker_list' %}" class="btn btn-primary">Смотреть все стикеры</a>
+    </div>
+</section>
+
+<!-- Популярные города -->
+<section class="container mb-5">
+    <h2 class="mb-4">Популярные города</h2>
+    <div class="row">
+        {% for city in popular_cities %}
+            <div class="col-md-4 col-sm-6">
+                <div class="card city-card">
+                    {% if city.image %}
+                        <img src="{{ city.image.url }}" class="city-image" alt="{{ city.name }}">
+                    {% else %}
+                        <img src="{% static 'img/city-placeholder.jpg' %}" class="city-image" alt="{{ city.name }}">
+                    {% endif %}
+                    <h3 class="city-name">{{ city.name }}</h3>
+                    <a href="{% url 'sticker_list' %}?city={{ city.slug }}" class="stretched-link"></a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <p class="text-center">Города пока не добавлены</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Категории -->
+<section class="container mb-5">
+    <h2 class="mb-4">Категории</h2>
+    <div class="row text-center">
+        {% for category in categories %}
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas {{ category.icon }} category-icon"></i>
+                        <h5 class="card-title">{{ category.name }}</h5>
+                        <a href="{% url 'sticker_list' %}?category={{ category.slug }}" class="stretched-link"></a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <p class="text-center">Категории пока не добавлены</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://kit.fontawesome.com/your-code.js"></script>
+{% endblock %}
